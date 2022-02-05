@@ -6,12 +6,12 @@ use Console\Console;
 
 class Demo
 {
-    public function postPackageInstall(): void
+    public static function postPackageInstall(): void
     {
-        $this->welcome("CONSOLE IS WORK!");
+        self::welcome("CONSOLE IS WORK!");
     }
 
-    private function welcome(string $content = "Welcome"): void
+    private static function welcome(string $content = "Welcome"): void
     {
         Console::getInstance('message')->color('red')->bold()->write($content);
     }
