@@ -10,5 +10,6 @@ class SuccessStyle extends AStyle
 {
     protected $color = self::COLORS['black'];
     protected $bg = self::COLORS['green'];
+    protected $style = self::BOLD;
     protected $wrap_text = ' ';
 }

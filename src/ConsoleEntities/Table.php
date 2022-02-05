@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Console\ConsoleEntity;
+namespace Console\ConsoleEntities;
 
 use Console\ConsoleEntity\IConsoleEntity;
 

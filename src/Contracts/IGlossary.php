@@ -24,6 +24,7 @@ interface IGlossary
         'perple' => 5,
         'azure'  => 6,
         'grey'   => 7,
+        'gray'   => 7,
         'white'  => 9,
     ];
 }

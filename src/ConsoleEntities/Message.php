@@ -1,32 +1,85 @@
-<?php 
+<?php
+
+/**
+ * ---------------------------------------------- |
+ *            _____                       _       |
+ *           /  __ \                     | |      |
+ *           | /  \/ ___  _ __  ___  ___ | | ___  |
+ *           | |    / _ \| '_ \/ __|/ _ \| |/ _ \ |
+ *           | \__/\ (_) | | | \__ \ (_) | |  __/ |
+ *            \____/\___/|_| |_|___/\___/|_|\___| |
+ * ---------------------------------------------- |
+ * Vladimir Navolykin | vnavolykin/console | 2022 |
+ * ---------------------------------------------- |
+ */
 
 declare(strict_types=1);
 
-namespace Console\ConsoleEntity;
+namespace Console\ConsoleEntities;
 
-use Console\Contracts\IConsoleEntity;
+use Console\ConsoleEntities\IConsoleEntity;
 use Console\Contracts\IGlossary;
 use Console\Styles\AStyle;
 
+/**
+ * A text message that is output to the console. Can be formatted directly, 
+ * or via a style object. To output, use the write and writeln methods.
+ */
 class Message implements IConsoleEntity, IGlossary
 {
-    private $content = '';
+    /**
+     * Message content.
+     *
+     * @var string
+     */
+    private string $content = '';
 
-    private $wrap_text = '';
+    /**
+     * Adds a line to the beginning of the content and a reversed line to the end, 
+     * thereby wrapping the text.
+     *
+     * @var string
+     */
+    private string $wrap_text = '';
 
-    private $color   = null;
+    /**
+     * Content color.
+     *
+     * @var int|null
+     */
+    private ?int $color = null;
 
-    private $bg      = null;
+    /**
+     * Background color.
+     *
+     * @var int|null
+     */
+    private ?int $bg = null;
 
-    private $style   = [];
+    /**
+     * Styles applied to content
+     *
+     * @var array
+     */
+    private array $style = [];
 
-    private $position = [];
-
+    /**
+     * It may not take values. The message will be empty.
+     * Can accept an array of the following format:
+     *  [
+     *      "content" => "Message content",
+     *      "color" => string IGlossary::const,
+     *      "bg" => string IGlossary::const,
+     *      "wrap_text" => "Wrap text",
+     *  ]
+     * Can accept multiple arguments, they will be interpreted in the following 
+     * order: content, color, bg, wrap_text
+     */
     public function __construct()
     {
         $args_num = func_num_args();
 
-        $content = '';
+        $content = $wrap_text = '';
         $color = $bg = null;
 
         if ($args_num > 0) {
@@ -36,49 +89,66 @@ class Message implements IConsoleEntity, IGlossary
                 $content = isset($params['content']) ? $params['content'] : $this->content;
                 $color = isset($params['color']) ? $params['color'] : $this->color;
                 $bg = isset($params['bg']) ? $params['bg'] : $this->bg;
+                $wrap_text = isset($params['wrap_text']) ? $params['wrap_text'] : $this->bg;
             } else {
+                $content = func_get_arg(0);
+
                 if ($args_num > 1) {
-                    $content = func_get_arg(0);
                     $color = func_get_arg(1);
                 }
 
                 if ($args_num > 2) {
                     $bg = func_get_arg(2);
                 }
+
+                if ($args_num > 3) {
+                    $wrap_text = func_get_arg(3);
+                }
             }
 
             $this->content = $content;
 
-            if ($color != null) {
+            if ($color !== null) {
                 if (!is_string($color) && !isset(self::COLORS[strtolower($color)])) {
                     throw new \Exception();
                 }
 
-                $this->color = 3 . self::COLORS[strtolower($color)];
+                $this->color = intval(3 . self::COLORS[strtolower($color)]);
             }
 
-            if ($color != null) {
+            if ($bg !== null) {
                 if (!is_string($bg) && !isset(self::COLORS[strtolower($bg)])) {
                     throw new \Exception();
                 }
 
-                $this->bg = 4 . self::COLORS[strtolower($bg)];
+                $this->bg = intval(4 . self::COLORS[strtolower($bg)]);
+            }
+
+            if (is_string($wrap_text) && $wrap_text !== '') {
+                $this->wrap_text = $wrap_text;
             }
         }
     }
 
+    /**
+     * Formats a message based on a style object.
+     *
+     * @param Console\Styles\AStyle $style Style Object
+     * 
+     * @return self
+     */
     public function setStyle(AStyle $style): self
     {
         if ($style->color !== null) {
-            $this->color = 3 . $style->color;
+            $this->color = intval(3 . $style->color);
         }
         
         if ($style->bg !== null) {
-            $this->bg = 4 . $style->bg;
+            $this->bg = intval(4 . $style->bg);
         }
         
-        if (!empty($style->style)) {
-            $this->style = $style->style;
+        if ($style->style !== null) {
+            $this->style[] = $style->style;
         }
 
         if ($style->wrap_text !== '') {
@@ -99,7 +169,7 @@ class Message implements IConsoleEntity, IGlossary
             throw new \Exception();
         }
 
-        $this->color = 3 . self::COLORS[strtolower($color)];
+        $this->color = intval(3 . self::COLORS[strtolower($color)]);
 
         return $this;
     }
@@ -110,7 +180,7 @@ class Message implements IConsoleEntity, IGlossary
             throw new \Exception();
         }
 
-        $this->bg = 4 . self::COLORS[strtolower($color)];
+        $this->bg = intval(4 . self::COLORS[strtolower($color)]);
 
         return $this;
     }
@@ -185,16 +255,10 @@ class Message implements IConsoleEntity, IGlossary
         return $this;
     }
 
-    public function position(int $column, int $row): self
-    {
-        $this->position = [$column, $row];
-
-        return $this;
-    }
-
     public function reset(): self
     {
         $this->color = $this->bg = null;
+        $this->wrap_text = '';
         $this->style = [];
 
         return $this;
@@ -248,12 +312,11 @@ class Message implements IConsoleEntity, IGlossary
 
         $code .= 'm';
 
-        $position = '';
-        if (!empty($this->position)) {
-            $position = "\033[" . $this->position[0] . ';' . $this->position[1] . 'H';
-        }
-
-        return $position . "\033[" . $code . $this->wrap_text . $this->content . $this->wrap_text . "\033[0m";
+        return "\033[" . $code . $this->wrap_text . $this->content . strrev($this->wrap_text) . "\033[0m";
     }
 
+    public function __toString()
+    {
+        $this->write('');
+    }
 }
